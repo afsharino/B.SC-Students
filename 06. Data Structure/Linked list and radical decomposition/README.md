@@ -1,7 +1,3 @@
-# B.SC-Students
-
-here is list of projects which I did in my bachelor of science
-
 <img src="https://i.pinimg.com/originals/cf/6f/cf/cf6fcf14be2cd01dd4923b36445ca632.gif" width="400" style="float: centre;"/>
 
 ## Where are readme files??????
