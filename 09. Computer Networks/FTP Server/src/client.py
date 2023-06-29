@@ -14,21 +14,72 @@ class Client():
     
     def connect_to_server(self):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print(f'Trying to connect to the server...')
         client.connect((self.SERVER_HOST, self.SERVER_PORT))
 
         while True:
-            server_response = client.recv(self.BUFFER_SIZE).decode('utf-8')
-            status, message = server_response.split('@')
+            try:
+                server_response = client.recv(self.BUFFER_SIZE).decode('utf-8')
+                status, message = server_response.split('@')
 
-            if status == 'OK':
-                print(message)
+                if status == 'OK':
+                    print(message)
+                
+                elif status == "DISCONNECT":
+                    print(message)
+                    break
+
+                elif status == "ERROR":
+                    print(message)
+
+                user_input = input('> ')
+                command, *args = user_input.split(' ')
+
+                if command == "HELP":
+                    client.send(user_input.encode('utf-8'))
+
+                elif command == "LIST":
+                    client.send(user_input.encode('utf-8'))
+
+                elif command == "UPLOAD":
+                    file_path = args[0]
+                    file_name = file_path.split('/')[-1]
+                    
+                    with open(file_path, 'rb') as f:
+                        data = f.read()
+
+                    send_data = f'{command} {file_name} {data}'
+
+
+                elif command == "DOWNLOAD":
+                    pass
+
+                elif command == "DELETE" :
+                    if args:
+                        file_name = args[0]
+                        send_data = f'{command} {file_name}'
+                        client.send(send_data.encode('utf'))
+                        
+                    else:
+                        print(f'Enter file name to delete')
+
+                    
+
+                elif command == "LOGOUT":
+                    client.send(user_input.encode('utf-8'))
+                    break
+
+                else:
+                    client.send("OTHER".encode('utf'))
             
-            elif status == "ERROR":
-                print(message)
+            except Exception as e:
+                print(f'Error raised: {e}')
+                break
+
+        print(f'Disconnected from the server.')
+        client.close()
 
 
 if __name__ == '__main__':
     
     client = Client()
-    client.connect_to_server()
+    client.connect_to_server() 
