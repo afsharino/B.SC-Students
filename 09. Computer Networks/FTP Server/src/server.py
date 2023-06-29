@@ -57,7 +57,7 @@ class Server():
                     if files:
                         if args[0] in files:
                             os.system(f'rm {self.SERVER_FILES_DIR}/{args[0]}')
-                            server_response += f'{args[0]} deleted from server successfully'
+                            server_response += f'{args[0]} deleted from server successfully\n'
                         else:
                             server_response += f'{args[0]} not found'
 
