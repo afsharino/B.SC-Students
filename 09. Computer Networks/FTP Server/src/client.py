@@ -58,6 +58,7 @@ class Client():
 
                     elif status == "ERROR":
                         print(f'<ERROR> {message}')
+                        
                 elif command == "UPLOAD":
                     if args:
                         try:
@@ -118,13 +119,6 @@ class Client():
                                             break
                                         f.write(data)
                                         bytes_received += len(data)
-                                    # while True:
-                                    #     data = client.recv(self.BUFFER_SIZE)
-                                    #     if b'<END>' in data:
-                                    #         data = data.replace(b'<END>', b'')
-                                    #         f.write(data)
-                                    #         break
-                                    #     f.write(data)
                             print(f'{file_name} downloaded successfully!')
                             
                         except Exception as e:

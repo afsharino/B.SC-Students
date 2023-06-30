@@ -15,8 +15,6 @@ class Server():
         self.SERVER_FILES_DIR = '/home/afsharino/Desktop/server_files/'
         self.SERVER_SOCKET = None
 
-        self.start_server()
-
     def start_server(self) -> None:
         try:
             print(f'Server is starting...')
@@ -156,10 +154,10 @@ class Server():
             print(f'{file_name} uploaded to the server')
             client_socket.send(server_response.encode('utf-8'))
     
-    except Exception as e:
-        print(f'Error raised: {e}\n')
-        server_response= f'ERROR@Server is not responding.\n'
-        client_socket.send(server_response.encode('utf-8'))
+        except Exception as e:
+            print(f'Error raised: {e}\n')
+            server_response= f'ERROR@Server is not responding.\n'
+            client_socket.send(server_response.encode('utf-8'))
     
     def download_file(self, client_socket, args) -> None:
         try:
@@ -221,7 +219,7 @@ class Server():
         client_response = client_socket.recv(self.BUFFER_SIZE)
         username, password = client_response.split(' ')
 
-        db_connection = sqllite3.connect('database.db')
+        db_connection = sqlite3.connect('database.db')
         cursor = db_connection.cursor()
 
         # Query the database for the provided username and password
@@ -239,9 +237,21 @@ class Server():
             client_socket.send('ERROR@Invalid credential.\n'.encode('utf-8'))
             return False
 
+    def add_user_to_database(self, username, password):
+        # Insert the new user into the database
+        try:
+            db_connection = sqlite3.connect('database.db')
+            cursor = db_connection.cursor()
+            cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
+            db_connection.commit()
 
+            db_connection.close()
 
-                 
+            return True
+
+        except Exception as e:
+            print(f"Error Raised: {e}")
+            return False          
 
     @classmethod
     def human_readable(cls, num, suffix="B"):
@@ -265,3 +275,21 @@ class Server():
 if __name__ == '__main__':
 
     server = Server()
+    print("Welcome Admin")
+  
+    while True:
+        print("Enter Choise:\n")
+        print(f'1) ADD USER\n2) RUN SERVER\n')
+        user_choise = input('> ')
+        if user_choise == '1':
+            username = input('> username: ')
+            password = input('> password: ')
+            server.add_user_to_database(username, password)
+            print(f"{username} added to database successfully\n")
+
+        elif user_choice == '2':
+            server.start_server()
+            break
+
+        else:
+            print("Invalid Input!!!")
