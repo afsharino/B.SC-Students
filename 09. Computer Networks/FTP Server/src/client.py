@@ -41,14 +41,22 @@ class Client():
                     client.send(user_input.encode('utf-8'))
 
                 elif command == "UPLOAD":
-                    file_path = args[0]
-                    file_name = file_path.split('/')[-1]
-                    
-                    with open(file_path, 'rb') as f:
-                        data = f.read()
+                    if args:
+                        try:
+                            file_path = args[0]
+                            file_name = file_path.split('/')[-1]
+                        
+                            with open(file_path, 'rb') as f:
+                                data = f.read()
 
-                    send_data = f'{command} {file_name} {data}'
+                            send_data = f'{command} {file_name} {data}'
+                            client.send(user_input.encode('utf-8'))
+                            
+                        except Exception as e:
+                            client.send("INVALID_ARGS_UPLOAD".encode('utf'))
 
+                    else:
+                        client.send("INVALID_ARGS_UPLOAD".encode('utf'))
 
                 elif command == "DOWNLOAD":
                     pass
@@ -58,9 +66,9 @@ class Client():
                         file_name = args[0]
                         send_data = f'{command} {file_name}'
                         client.send(send_data.encode('utf'))
-                        
+
                     else:
-                        print(f'Enter file name to delete')
+                        client.send("INVALID_ARGS_DELETE".encode('utf'))
 
                     
 
