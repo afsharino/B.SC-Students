@@ -10,7 +10,7 @@ class Server():
     def __init__(self) -> None:
         # Initial configuration
         self.SERVER_HOST = socket.gethostbyname(socket.gethostname())
-        self.SERVER_PORT = 9094
+        self.SERVER_PORT = 9090
         self.BUFFER_SIZE = 4096
         self.SERVER_FILES_DIR = '/home/afsharino/Desktop/server_files/'
         self.SERVER_SOCKET = None
@@ -34,7 +34,7 @@ class Server():
             print(f'Error raised: {e}')
     
     def handle_client(self, client_socket, client_address):
-        #try:
+        try:
             while True:
                 if self.authenticate_user(client_socket):
                     print(f'New connection established on  {client_address[0]}:{client_address[1]}')
@@ -43,7 +43,8 @@ class Server():
                     while True:
                         client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
                         command, *args = client_response.split(' ')
-                        print(f'Client requested to {command}')
+                        if command:
+                            print(f'Client requested to {command}')
 
                         if command == "HELP":
                             self.get_help(client_socket)
@@ -69,15 +70,15 @@ class Server():
                             client_socket.send(server_response.encode('utf-8'))
 
                         elif command == "INVALID_ARGS_UPLOAD":
-                            server_response = f'OK@Enter Valid file path.\n'
+                            server_response = f'ERROR@Enter Valid file path.\n'
                             client_socket.send(server_response.encode('utf-8'))
                         
                         elif command == "INVALID_ARGS_DOWNLOAD":
-                            server_response = f'OK@Invalid arguments.\n'
+                            server_response = f'ERROR@Invalid arguments.\n'
                             client_socket.send(server_response.encode('utf-8'))
                         
                         elif command == "INVALID_ARGS_DELETE":
-                            server_response = f'OK@Enter file name to delete.\n'
+                            server_response = f'ERROR@Enter file name to delete.\n'
                             client_socket.send(server_response.encode('utf-8'))
 
                         else:
@@ -91,8 +92,8 @@ class Server():
                     print(f'Authentication failed')
                     continue
         
-        #except Exception as e:
-            #print(f'Error Raised: {e}')
+        except Exception as e:
+            print(f'Error Raised: {e}')
 
     def get_help(self, client_socket) -> None:
         server_response = f'OK@' +\
@@ -218,29 +219,33 @@ class Server():
             client_socket.send(server_response.encode('utf-8'))
 
     def authenticate_user(self, client_socket):
+        try:
+            client_socket.send('AUTHENTICATE@Login to the server.\n'.encode('utf-8'))
+            client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
+            args = client_response.split(' ')
 
-        client_socket.send('AUTHENTICATE@Login to the server.\n'.encode('utf-8'))
-        client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
-    
-        username, password = client_response.split(' ')
+            username, password = args[0], args[1]
 
-        db_connection = sqlite3.connect('database.db')
-        cursor = db_connection.cursor()
+            db_connection = sqlite3.connect('database.db')
+            cursor = db_connection.cursor()
 
-        # Query the database for the provided username and password
-        cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
-        user = cursor.fetchone()
+            # Query the database for the provided username and password
+            cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
+            user = cursor.fetchone()
 
-        # Close the database connection
-        db_connection.close()
+            # Close the database connection
+            db_connection.close()
 
 
-        # Check if a user with the provided credentials exists
-        if user is not None:
-            return True
-        else:
-            client_socket.send('ERROR@Invalid credential.\n'.encode('utf-8'))
-            return False
+            # Check if a user with the provided credentials exists
+            if user is not None:
+                return True
+            else:
+                client_socket.send('ERROR@Invalid credential.\n'.encode('utf-8'))
+                return False
+
+        except Exception as e:
+            print(f"Error Raised: {e}")
 
     def add_user_to_database(self, username, password):
         # Insert the new user into the database
