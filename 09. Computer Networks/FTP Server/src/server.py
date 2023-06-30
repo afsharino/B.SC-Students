@@ -4,6 +4,7 @@ import socket
 import threading
 from datetime import datetime
 
+
 class Server():
     def __init__(self) -> None:
         self.SERVER_HOST = socket.gethostbyname(socket.gethostname())
@@ -32,9 +33,9 @@ class Server():
         client_socket.send("OK@>> WELCOME TO THE FTP SERVER <<".encode('utf-8'))
 
         while True:
-
             client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
             command, *args = client_response.split(' ')
+            
             print(f'Client requested to {command}')
 
             if command == 'AUTH':
@@ -94,10 +95,10 @@ class Server():
                     if files:
                         longest_name = Server.find_longest_name(files)
                         for file_name in files:
-                            filepath = os.path.join(self.SERVER_FILES_DIR, file_name)
-                            file_created = datetime.fromtimestamp(os.path.getctime(filepath)).strftime('%Y-%m-%d %H:%M:%S')
-                            file_modefied = datetime.fromtimestamp(os.path.getmtime(filepath)).strftime('%Y-%m-%d %H:%M:%S') 
-                            file_size = os.path.getsize(filepath)
+                            file_path = os.path.join(self.SERVER_FILES_DIR, file_name)
+                            file_created = datetime.fromtimestamp(os.path.getctime(file_path)).strftime('%Y-%m-%d %H:%M:%S')
+                            file_modefied = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d %H:%M:%S') 
+                            file_size = os.path.getsize(file_path)
                             file_size = Server.human_readable(file_size)
                             
                             file_name += (len(longest_name) - len(file_name)) * ' '
@@ -111,7 +112,39 @@ class Server():
                     client_socket.send(server_response.encode('utf-8'))
             
             elif command == "UPLOAD":
-                pass 
+                try:
+                    file_name = args[0]
+                    file_size = int(args[1])
+
+                    if file_name in os.listdir(self.SERVER_FILES_DIR):
+                        file_name = file_name.split('.')
+                        file_name = file_name[0] + 'copy.' + file_name[1]
+                        file_path = os.path.join(self.SERVER_FILES_DIR, file_name)
+
+                    else:
+                        file_path = os.path.join(self.SERVER_FILES_DIR, file_name)
+
+                    
+
+                    with open(file_path,'wb' ) as f:
+                        bytes_received = 0
+                        while bytes_received < file_size:
+                            data = client_socket.recv(self.BUFFER_SIZE)
+                            if not data:
+                                break
+                            f.write(data)
+                            bytes_received += len(data)
+
+                    server_response = f'OK@{file_name} uploaded to the server successfully!\n'
+                    client_socket.send(server_response.encode('utf-8'))
+                
+                except Exception as e:
+                    print(f'Error raised: {e}\n')
+                    server_response= f'ERROR@Server is not responding.\n'
+                    client_socket.send(server_response.encode('utf-8'))
+
+            elif command == 'DOWNLOAD':
+                
             elif command == "OTHER":
                 server_response = f'OK@Command not found.\nNOTE: commands are case sensetive\n' +\
                 f'To see available commands enter "HELP" command.\n'
@@ -131,6 +164,7 @@ class Server():
             
 
             else:
+
                 break
         
         print(f'{client_address[0]}:{client_address[1]} Disconnected from the server.')

@@ -45,12 +45,14 @@ class Client():
                         try:
                             file_path = args[0]
                             file_name = file_path.split('/')[-1]
-                        
+                            file_size = os.path.getsize(file_path)
+
+                            send_data = f'{command} {file_name} {file_size}'
+                            client.send(send_data.encode('utf-8'))
+
                             with open(file_path, 'rb') as f:
                                 data = f.read()
-
-                            send_data = f'{command} {file_name} {data}'
-                            client.send(user_input.encode('utf-8'))
+                                client.sendall(data)
                             
                         except Exception as e:
                             client.send("INVALID_ARGS_UPLOAD".encode('utf'))
@@ -59,7 +61,15 @@ class Client():
                         client.send("INVALID_ARGS_UPLOAD".encode('utf'))
 
                 elif command == "DOWNLOAD":
-                    pass
+                    if args:
+                        try:
+                            file_path = args[0]
+                            file_name = file_path.split('/')[-1]
+                            file_size = os.path.getsize(file_path)
+
+                            send_data = f'{command} {file_name} {file_size}'
+                            client.send(send_data.encode('utf-8'))
+
 
                 elif command == "DELETE" :
                     if args:
