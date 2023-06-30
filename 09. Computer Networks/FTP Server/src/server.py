@@ -10,7 +10,7 @@ class Server():
     def __init__(self) -> None:
         # Initial configuration
         self.SERVER_HOST = socket.gethostbyname(socket.gethostname())
-        self.SERVER_PORT = 9092
+        self.SERVER_PORT = 9094
         self.BUFFER_SIZE = 4096
         self.SERVER_FILES_DIR = '/home/afsharino/Desktop/server_files/'
         self.SERVER_SOCKET = None
@@ -34,61 +34,65 @@ class Server():
             print(f'Error raised: {e}')
     
     def handle_client(self, client_socket, client_address):
-        while True:
-            if self.authenticate_user():
-                print(f'New connection established on  {client_address[0]}:{client_address[1]}')
-                client_socket.send("OK@>> WELCOME TO THE FTP SERVER <<".encode('utf-8'))
+        #try:
+            while True:
+                if self.authenticate_user(client_socket):
+                    print(f'New connection established on  {client_address[0]}:{client_address[1]}')
+                    client_socket.send("OK@>> WELCOME TO THE FTP SERVER <<".encode('utf-8'))
 
-                while True:
-                    client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
-                    command, *args = client_response.split(' ')
-                    print(f'Client requested to {command}')
+                    while True:
+                        client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
+                        command, *args = client_response.split(' ')
+                        print(f'Client requested to {command}')
 
-                    if command == "HELP":
-                        self.get_help(client_socket)
+                        if command == "HELP":
+                            self.get_help(client_socket)
 
-                    elif command == "LIST":
-                        self.list_files(client_socket)
+                        elif command == "LIST":
+                            self.list_files(client_socket)
+                        
+                        elif command == "UPLOAD":
+                            self.upload_file(client_socket, args)
+                        
+                        elif command == "DELETE":
+                            self.delete_file(client_socket, args)
+                                
+                        elif command == "LOGOUT":
+                            break
+                                
+                        elif command == 'DOWNLOAD':
+                            self.download_file(client_socket, args)
+
+                        elif command == "OTHER":
+                            server_response = f'OK@Command not found.\nNOTE: commands are case sensetive\n' +\
+                            f'To see available commands enter "HELP" command.\n'
+                            client_socket.send(server_response.encode('utf-8'))
+
+                        elif command == "INVALID_ARGS_UPLOAD":
+                            server_response = f'OK@Enter Valid file path.\n'
+                            client_socket.send(server_response.encode('utf-8'))
+                        
+                        elif command == "INVALID_ARGS_DOWNLOAD":
+                            server_response = f'OK@Invalid arguments.\n'
+                            client_socket.send(server_response.encode('utf-8'))
+                        
+                        elif command == "INVALID_ARGS_DELETE":
+                            server_response = f'OK@Enter file name to delete.\n'
+                            client_socket.send(server_response.encode('utf-8'))
+
+                        else:
+
+                            break
                     
-                    elif command == "UPLOAD":
-                        self.upload_file(client_socket, args)
-                    
-                    elif command == "DELETE":
-                        self.delete_file(client_socket, args)
-                            
-                    elif command == "LOGOUT":
-                        break
-                            
-                    elif command == 'DOWNLOAD':
-                        self.download_file(client_socket, args)
-
-                    elif command == "OTHER":
-                        server_response = f'OK@Command not found.\nNOTE: commands are case sensetive\n' +\
-                        f'To see available commands enter "HELP" command.\n'
-                        client_socket.send(server_response.encode('utf-8'))
-
-                    elif command == "INVALID_ARGS_UPLOAD":
-                        server_response = f'OK@Enter Valid file path.\n'
-                        client_socket.send(server_response.encode('utf-8'))
-                    
-                    elif command == "INVALID_ARGS_DOWNLOAD":
-                        server_response = f'OK@Invalid arguments.\n'
-                        client_socket.send(server_response.encode('utf-8'))
-                    
-                    elif command == "INVALID_ARGS_DELETE":
-                        server_response = f'OK@Enter file name to delete.\n'
-                        client_socket.send(server_response.encode('utf-8'))
-
-                    else:
-
-                        break
+                    print(f'{client_address[0]}:{client_address[1]} Disconnected from the server.')
+                    break
                 
-                print(f'{client_address[0]}:{client_address[1]} Disconnected from the server.')
-                break
-            
-            else:
-                print(f'Authentication failed')
-                continue
+                else:
+                    print(f'Authentication failed')
+                    continue
+        
+        #except Exception as e:
+            #print(f'Error Raised: {e}')
 
     def get_help(self, client_socket) -> None:
         server_response = f'OK@' +\
@@ -104,7 +108,7 @@ class Server():
     def list_files(self, client_socket) -> None:
         try:
             files = os.listdir(self.SERVER_FILES_DIR)
-            server_response = f'OK@FILE_NAME\t\t\t\t\t\tCREATED_DATE\t\tMODIFIED_DATE\t\tFILE_SIZE\n' 
+            server_response = f'OK@FILE_NAME\t\t\tCREATED_DATE\t\tMODIFIED_DATE\t\tFILE_SIZE\n' 
             
             if files:
                 # Get name with longest length
@@ -216,7 +220,8 @@ class Server():
     def authenticate_user(self, client_socket):
 
         client_socket.send('AUTHENTICATE@Login to the server.\n'.encode('utf-8'))
-        client_response = client_socket.recv(self.BUFFER_SIZE)
+        client_response = client_socket.recv(self.BUFFER_SIZE).decode('utf-8')
+    
         username, password = client_response.split(' ')
 
         db_connection = sqlite3.connect('database.db')
@@ -243,6 +248,22 @@ class Server():
             db_connection = sqlite3.connect('database.db')
             cursor = db_connection.cursor()
             cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
+            db_connection.commit()
+
+            db_connection.close()
+
+            return True
+
+        except Exception as e:
+            print(f"Error Raised: {e}")
+            return False   
+
+    def delete_user_from_database(self, username):
+        # Insert the new user into the database
+        try:
+            db_connection = sqlite3.connect('database.db')
+            cursor = db_connection.cursor()
+            cursor.execute('DELETE FROM users WHERE username=?', (username,))
             db_connection.commit()
 
             db_connection.close()
@@ -279,15 +300,20 @@ if __name__ == '__main__':
   
     while True:
         print("Enter Choise:\n")
-        print(f'1) ADD USER\n2) RUN SERVER\n')
-        user_choise = input('> ')
-        if user_choise == '1':
+        print(f'1) ADD USER\n2) DELETE USER \n3) RUN SERVER')
+        user_choice = input('> ')
+        if user_choice == '1':
             username = input('> username: ')
             password = input('> password: ')
             server.add_user_to_database(username, password)
             print(f"{username} added to database successfully\n")
 
         elif user_choice == '2':
+            username = input('> username to delete: ')
+            server.delete_user_from_database(username)
+            print(f"{username} deleted from database successfully\n")
+
+        elif user_choice == '3':
             server.start_server()
             break
 

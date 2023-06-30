@@ -6,13 +6,14 @@ import threading
 class Client():
     def __init__(self) -> None:
         self.SERVER_HOST = '127.0.1.1'
-        self.SERVER_PORT = 9092
+        self.SERVER_PORT = 9094
         self.BUFFER_SIZE = 4096
+        self.SERVER_SOCKET = None
 
 
     def connect_to_server(self):
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.connect((self.SERVER_HOST, self.SERVER_PORT))
+        self.SERVER_SOCKET = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.SERVER_SOCKET.connect((self.SERVER_HOST, self.SERVER_PORT))
 
         while True:
             server_response = client.recv(self.BUFFER_SIZE).decode('utf-8')
@@ -33,6 +34,8 @@ class Client():
                     break
                 else:
                     print(f'{message}')
+
+        
 
         while True:
             try:
@@ -58,7 +61,7 @@ class Client():
 
                     elif status == "ERROR":
                         print(f'<ERROR> {message}')
-                        
+
                 elif command == "UPLOAD":
                     if args:
                         try:
