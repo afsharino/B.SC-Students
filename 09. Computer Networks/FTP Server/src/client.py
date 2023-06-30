@@ -13,13 +13,27 @@ class Client():
     def connect_to_server(self):
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect((self.SERVER_HOST, self.SERVER_PORT))
-        server_response = client.recv(self.BUFFER_SIZE).decode('utf-8')
-        status, message = server_response.split('@')
-        if status == 'OK':
-            print(f'{message}')  
 
-        elif status == "ERROR":
-            print(f'<ERROR> {message}')
+        while True:
+            server_response = client.recv(self.BUFFER_SIZE).decode('utf-8')
+            status, message = server_response.split('@')
+            
+            if status == 'AUTHENTICATE':
+                print(f'{message}')
+                user_name = input('> User Name: ')
+                password = input('> Password: ')
+
+                client.send(f'{user_name} {password}'.encode('utf-8'))
+
+                server_response = client.recv(self.BUFFER_SIZE).decode('utf-8')
+                status, message = server_response.split('@')
+
+                if status == 'OK':
+                    print(f'{message}')
+                    break
+                else:
+                    print(f'{message}')
+
         while True:
             try:
                 user_input = input('> ')
